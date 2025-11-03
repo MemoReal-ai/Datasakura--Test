@@ -57,7 +57,7 @@ namespace _Project.Scripts.Gameplay.Core.Component
             Vector3 direction = Random.insideUnitSphere;
             direction.y = 0;
             direction.Normalize();
-            
+
             if (direction == Vector3.zero)
             {
                 direction = Vector3.forward;
@@ -66,7 +66,7 @@ namespace _Project.Scripts.Gameplay.Core.Component
             direction = _cameraService.ClampDirectionViewPort(direction, transform.position);
 
             await PrepareJump();
-            
+
             if (!IsAlive()) return;
 
             Vector3 jumpForce = direction * _distanceJump + Vector3.up * _heightJump;
@@ -97,19 +97,18 @@ namespace _Project.Scripts.Gameplay.Core.Component
 
         private async UniTask PrepareJump()
         {
-            try
-            {
-                var tweenStartPrepare =
-                    transform.DOScaleY(ANIMATOIN_SCALE_Y, DURATION_PREPARE_JUMP).SetEase(Ease.InOutSine);
-                await tweenStartPrepare.AsyncWaitForCompletion();
+            var tweenStart = transform.DOScaleY(ANIMATOIN_SCALE_Y, DURATION_PREPARE_JUMP)
+                .SetEase(Ease.InOutSine);
 
-                var tweenEndPrepare = transform.DOScaleY(BASE_SCALE_Y, DURATION_PREPARE_JUMP).SetEase(Ease.InOutSine);
-                await tweenEndPrepare.AsyncWaitForCompletion();
-            }
-            catch (Exception e)
-            {
-                Debug.Log(e);
-            }
+            await UniTask.WaitUntil(() => !tweenStart.IsActive() || !tweenStart.IsPlaying(),
+                cancellationToken: _cancellationTokenSource.Token);
+
+
+            var tweenEnd = transform.DOScaleY(BASE_SCALE_Y, DURATION_PREPARE_JUMP)
+                .SetEase(Ease.InOutSine);
+
+            await UniTask.WaitUntil(() => !tweenEnd.IsActive() || !tweenEnd.IsPlaying(),
+                cancellationToken: _cancellationTokenSource.Token);
         }
 
         private void OnDestroy()
